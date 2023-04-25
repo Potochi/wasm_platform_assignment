@@ -1,0 +1,20 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.1.0] - 25-04-2023
+
+### Added
+
+#### Bud Liviu-Alexandru
+- Worked on implementing the backend of the application
+- Implemented the web server using Axum in Rust
+- Implemented a CRUD that allows users to deploy WASM modules on the server
+- Implemented an API that allows users to call functions from deployed WASM modules
+- Setup Traefik as a Reverse Proxy
+
+#### Banu Maximilian
+- Worked on implementing the frontend
+- Implemented the interaction with the backend
+- Implemented a user friendly UI to deploy modules and call functions from those modules
+- Worked on separating some functionality from the Backend crate into the common crate
