@@ -1,0 +1,55 @@
+[package]
+name = "aws_backend"
+version = "0.1.0"
+edition = "2021"
+
+default-run = "aws_backend"
+
+[lib]
+name = "aws_backend"
+crate-type = ["lib"]
+
+[[bin]]
+name = "aws_backend"
+path = "src/bin/backend.rs"
+
+[[bin]]
+name = "aws_migrator"
+path = "src/bin/migrator.rs"
+
+[dependencies]
+anyhow = "1.0.70"
+argon2 = { version = "0.5.0", features = ["std"] }
+axum = { version = "0.6.12", features = ["headers"] }
+base64 = "0.21.0"
+jsonwebtoken = "8.3.0"
+lazy_static = "1.4.0"
+sea-orm = { version = "0.11.2", features = [
+  "sqlx-sqlite",
+  "runtime-tokio-rustls",
+  "macros",
+] }
+sea-orm-migration = { version = "0.11.2", features = [
+  "sqlx-sqlite",
+  "runtime-tokio-rustls",
+] }
+sea-query = "0.28.3"
+serde = "1.0.159"
+serde_json = "1.0.95"
+sha2 = "0.10.6"
+thiserror = "1.0.40"
+tokio = { version = "1.27.0", features = [
+  "tracing",
+  "fs",
+  "bytes",
+  "macros",
+  "rt-multi-thread",
+] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
+wasmer = "3.1.1"
+wasmer-compiler-cranelift = "3.1.1"
+wasmer-middlewares = "3.1.1"
+wasmer-types = { version = "3.1.1", features = ["serde"] }
+aws_common = { path = "../common" }
+tower-http = { version = "0.4.0", features = ["cors"] }
