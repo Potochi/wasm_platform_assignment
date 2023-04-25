@@ -1,0 +1,13 @@
+[package]
+name = "aws_common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.6.12"
+serde = "1.0.159"
+serde_json = "1.0.95"
+wasmer = { version = "3.1.1", features = ["enable-serde"] }
+wasmer-types = { version = "3.1.1", features = ["serde"] }
