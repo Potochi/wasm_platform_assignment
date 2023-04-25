@@ -1,0 +1,62 @@
+version: "3"
+
+services:
+  database:
+    image: mysql:8.0.33-debian
+    command: --default-authentication-plugin=mysql_native_password
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+    deploy:
+      replicas: 1
+
+    networks:
+      database_net:
+      adminer_net:
+
+  adminer:
+    image: adminer:4.8.1-fastcgi
+
+    environment:
+      ADMINER_DEFAULT_SERVER: database
+
+    deploy:
+      replicas: 1
+
+    networks:
+      adminer_net:
+  
+  backend:
+    build:
+      dockerfile: ./Backend.dockerfile
+  
+    environment:
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@database:3306
+      LISTEN_ADDR: 0.0.0.0:3000
+
+    deploy:
+      replicas: 1
+
+    networks:
+      database_net:
+      backend_net:
+
+  dashboard:
+    build:
+      dockerfile: ./Dashboard.dockerfile
+
+    deploy:
+      replicas: 1
+
+    networks:
+      backend_net:
+      traefik_public:
+
+networks:
+  backend_net:
+  database_net:
+  adminer_net:
+  traefik_public:
+    external: true
