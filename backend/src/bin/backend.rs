@@ -9,9 +9,7 @@ use axum::{
 };
 
 use sea_orm::{ConnectOptions, Database};
-use sea_orm_migration::MigratorTrait;
 
-use aws_backend::migrator;
 use aws_backend::utils::DbConn;
 use aws_backend::{cache::ModuleCache, routes::modules::delete_module};
 use tower_http::cors;
@@ -27,10 +25,10 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::try_init()
         .map_err(|_| anyhow!("Failed to install tracing_subscriber"))?;
 
+    let mut db_opts = ConnectOptions::new(std::env::var("DB_URL").expect("DB_URL to be present"));
     db_opts.sqlx_logging(false);
 
     let db = Database::connect(db_opts).await?;
-    migrator::Migrator::up(&db, None).await?;
     let cache = ModuleCache::default();
 
     let db_conn = DbConn(Arc::new(db));
