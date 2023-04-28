@@ -11,7 +11,6 @@ use axum::{
 use sea_orm::{ConnectOptions, Database};
 use sea_orm_migration::MigratorTrait;
 
-use aws_backend::constants;
 use aws_backend::migrator;
 use aws_backend::utils::DbConn;
 use aws_backend::{cache::ModuleCache, routes::modules::delete_module};
@@ -28,9 +27,6 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::try_init()
         .map_err(|_| anyhow!("Failed to install tracing_subscriber"))?;
 
-    let mut db_opts = ConnectOptions::new(
-        std::env::var("DB_URL").unwrap_or(constants::DEFAULT_DB_URL.to_string()),
-    );
     db_opts.sqlx_logging(false);
 
     let db = Database::connect(db_opts).await?;
@@ -75,10 +71,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(db_conn))
         .layer(cors::CorsLayer::very_permissive());
 
-    let addr = SocketAddr::from_str(
-        &std::env::var("LISTEN_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string()),
-    )
-    .map_err(|e| anyhow!(e))?;
+    let addr =
+        SocketAddr::from_str(&std::env::var("LISTEN_ADDR").expect("LISTEN_ADDR to be present"))
+            .map_err(|e| anyhow!(e))?;
 
     tracing::info!("Listening on {}", addr);
 
