@@ -2,42 +2,26 @@ version: "3"
 
 services:
   database:
-    image: mysql:8.0.33-debian
-    command: --default-authentication-plugin=mysql_native_password
+    image: mariadb:latest
 
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
 
-    deploy:
-      replicas: 1
-
     networks:
       database_net:
-      adminer_net:
 
-  adminer:
-    image: adminer:4.8.1-fastcgi
-
-    environment:
-      ADMINER_DEFAULT_SERVER: database
-
-    deploy:
-      replicas: 1
-
-    networks:
-      adminer_net:
-  
   backend:
     build:
       dockerfile: ./Backend.dockerfile
-  
-    environment:
-      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@database:3306
-      LISTEN_ADDR: 0.0.0.0:3000
 
-    deploy:
-      replicas: 1
+    environment:
+      DB_URL: ${DB_URL}
+      LISTEN_ADDR: 0.0.0.0:3000
+      RUST_LOG: info
+
+    ports:
+      - 3000:3000
 
     networks:
       database_net:
@@ -47,16 +31,12 @@ services:
     build:
       dockerfile: ./Dashboard.dockerfile
 
-    deploy:
-      replicas: 1
+    ports:
+      - 8088:80
 
     networks:
       backend_net:
-      traefik_public:
 
 networks:
   backend_net:
   database_net:
-  adminer_net:
-  traefik_public:
-    external: true
