@@ -1,8 +1,14 @@
 FROM rust:1.69.0-buster as builder
 
-# Build out a dummy executable to update the cargo registry
-
 ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
+RUN cargo install sccache
+
+ENV HOME=/root
+ENV SCCACHE_CACHE_SIZE="5G"
+ENV SCCACHE_DIR=$HOME/.cache/sccache
+ENV RUSTC_WRAPPER="/usr/local/cargo/bin/sccache"
+
 WORKDIR /build
 
 COPY ./.cargo /build/
@@ -12,7 +18,7 @@ COPY ./Cargo.lock /build/
 COPY ./common /build/common/
 COPY ./backend /build/backend/
 
-RUN cargo build --release
+RUN --mount=type=cache,target=/root/.cache/sccache cargo build --release
 
 WORKDIR /dist
 
