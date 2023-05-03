@@ -7,7 +7,7 @@
 }
 </style>
 
-<script>
+<script lang="ts">
 import { userJwt } from "../auth";
 import { userModules } from "../modules";
 import { LoginReponse, apiUrl } from "../ApiTypes";
@@ -30,7 +30,7 @@ const handleSubmit = async () => {
   const data = await result.json();
 
   if (result.status == 200) {
-    const jwt = await LoginReponse.parse(data);
+    const jwt = LoginReponse.parse(data);
     $userJwt = jwt.jwt;
     return;
   }
@@ -56,7 +56,7 @@ const handleRegister = async () => {
   }
 };
 
-let errorTimeout;
+let errorTimeout: number;
 
 $: if (!!error) {
   clearTimeout(errorTimeout);
