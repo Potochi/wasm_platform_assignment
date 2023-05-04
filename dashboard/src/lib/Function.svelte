@@ -65,6 +65,7 @@ let timeout: number;
 let return_value = "";
 
 const values = Array<number>(parameters.length).fill(0);
+let visible = false;
 
 const callFunction = async () => {
   try {
@@ -89,20 +90,17 @@ const callFunction = async () => {
     } else {
       return_value = JSON.stringify(data);
     }
+
+    visible = true;
+
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      visible = false;
+    }, 2000);
   } catch {
     console.log("error in function");
   }
 };
-
-let visible = false;
-
-$: if (!!return_value) {
-  visible = !!return_value;
-  clearTimeout(timeout);
-  timeout = setTimeout(() => {
-    visible = false;
-  }, 2000);
-}
 </script>
 
 <div class="functionContainer">
