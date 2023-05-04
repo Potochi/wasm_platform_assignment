@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const apiUrl = `http://${import.meta.env.VITE_BACKEND_URL}/api/v1`;
+export const apiUrl = `${import.meta.env.VITE_BACKEND_URL}/api/v1`;
 
 export const ApiFunction = z
   .object({
