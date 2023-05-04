@@ -1,3 +1,4 @@
+# vim: set ts=2 sw=2:
 version: "3"
 
 services:
@@ -23,22 +24,32 @@ services:
       LISTEN_ADDR: 0.0.0.0:3000
       RUST_LOG: info
 
-    ports:
-      - 3000:3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.entrypoints=web,websecure
+      - traefik.http.routers.backend.tls=true
+      - traefik.http.routers.backend.rule=Host(`backend.surface.home`)
+      - traefik.http.services.backend.loadbalancer.server.port=3000
 
     networks:
       database_net:
       backend_net:
       prometheus_net:
+      gateway_net:
 
   dashboard:
     build:
       dockerfile: ./Dashboard.dockerfile
 
-    ports:
-      - 8088:80
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.entrypoints=web,websecure
+      - traefik.http.routers.dashboard.tls=true
+      - traefik.http.routers.dashboard.rule=Host(`dashboard.surface.home`)
+      - traefik.http.services.dashboard.loadbalancer.server.port=80
 
     networks:
+      gateway_net:
       backend_net:
 
   cloudbeaver:
@@ -46,12 +57,17 @@ services:
 
     networks:
       database_net:
-
-    ports:
-      - 8080:8978
+      gateway_net:
 
     volumes:
       - cloudbeaver_data:/opt/cloudbeaver/workspace
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cloudbeaver.entrypoints=web,websecure
+      - traefik.http.routers.cloudbeaver.tls=true
+      - traefik.http.routers.cloudbeaver.rule=Host(`cloudbeaver.surface.home`)
+      - traefik.http.services.cloudbeaver.loadbalancer.server.port=8978
 
   prometheus:
     image: prom/prometheus:latest
@@ -59,16 +75,42 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus:ro
 
-    ports:
-      - 9092:9090
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.entrypoints=web,websecure
+      - traefik.http.routers.prometheus.tls=true
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.surface.home`)
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
     networks:
       prometheus_net:
+      gateway_net:
+
+  gateway:
+    image: traefik:latest
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/:/etc/traefik/:ro
+      - ./secrets/:/etc/traefik_certs/:ro
+
+    labels:
+      - traefik.enable=true
+
+    networks:
+      gateway_net:
+
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
 
 networks:
   backend_net:
   database_net:
   prometheus_net:
+  gateway_net:
+    name: gateway_net
 
 volumes:
   database_data:

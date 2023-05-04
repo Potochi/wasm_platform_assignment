@@ -28,7 +28,7 @@ WORKDIR /dist
 RUN mv /build/target/release/aws_backend .
 RUN mv /build/target/release/aws_migrator .
 
-FROM debian:buster-slim
+FROM debian:buster
 
 WORKDIR /app
 
