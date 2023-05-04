@@ -19,8 +19,8 @@ use sea_orm::{
 use sha2::{Digest, Sha256};
 
 use crate::{
-    auth::jwt::AwsClaims, entities, extractors::ModuleHashPathParam, ffi, utils::DbConn,
-    ModuleCache,
+    auth::jwt::AwsClaims, entities, extractors::ModuleHashPathParam, ffi, metrics::WASM_CODE_SIZE,
+    utils::DbConn, ModuleCache,
 };
 
 fn wasmer_types_to_string(types: &[wasmer::Type]) -> Result<String, AwsError> {
@@ -34,10 +34,10 @@ fn wasmer_types_to_string(types: &[wasmer::Type]) -> Result<String, AwsError> {
 pub async fn deploy_module(
     claims: AwsClaims,
     Extension(DbConn(db)): Extension<DbConn>,
-    // axum::extract::Json(deploy_data): axum::extract::Json<DeployModuleBody>,
     data: body::Bytes,
 ) -> Result<(StatusCode, axum::Json<DeployModuleResponse>), AwsError> {
     let code = data.to_vec();
+    let code_len = code.len();
 
     let code_hash = format!("{:x}", Sha256::digest(&code));
 
@@ -91,6 +91,8 @@ pub async fn deploy_module(
     })
     .await
     .map_err(|_| AwsError::DuplicateFunction)?;
+
+    WASM_CODE_SIZE.add(code_len as f64);
 
     Ok((
         StatusCode::CREATED,
@@ -146,6 +148,13 @@ pub async fn delete_module(
 ) -> Result<(), AwsError> {
     db.transaction::<_, _, DbErr>(|txn| {
         Box::pin(async move {
+            let res = entities::module::Entity::find_by_id(id)
+                .one(txn)
+                .await?
+                .ok_or(DbErr::Custom("not_found".to_string()))?;
+
+            WASM_CODE_SIZE.sub(res.wasm_code.len() as f64);
+
             let res = entities::module::Entity::delete(entities::module::ActiveModel {
                 id: ActiveValue::set(id),
                 owner_id: ActiveValue::set(claims.uid),

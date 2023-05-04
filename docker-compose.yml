@@ -11,6 +11,9 @@ services:
     networks:
       database_net:
 
+    volumes:
+      - database_data:/var/lib/mysql
+
   backend:
     build:
       dockerfile: ./Backend.dockerfile
@@ -26,6 +29,7 @@ services:
     networks:
       database_net:
       backend_net:
+      prometheus_net:
 
   dashboard:
     build:
@@ -37,6 +41,23 @@ services:
     networks:
       backend_net:
 
+  prometheus:
+    image: prom/prometheus:latest
+
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+
+    ports:
+      - 9092:9090
+
+    networks:
+      prometheus_net:
+
 networks:
   backend_net:
   database_net:
+  prometheus_net:
+
+volumes:
+  database_data:
+  cloudbeaver_data:

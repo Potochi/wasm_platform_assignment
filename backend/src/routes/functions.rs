@@ -11,6 +11,7 @@ use wasmer_middlewares::metering::{get_remaining_points, set_remaining_points, M
 use crate::{
     extractors::{ModuleFunctionExtract, WalletExtract},
     ffi::WasmFFIConverter,
+    metrics::{FUNCTION_CALLS, FUNCTION_CALL_RESPONSE_TIME},
     migrator::m20230329_000003_wallets_table::Wallet,
     utils::{wasm_cost_function, DbConn},
 };
@@ -22,6 +23,8 @@ pub async fn call_function(
     axum::extract::Json(ctx): axum::extract::Json<CallFunctionBody>,
 ) -> Result<CallFunctionResponse, AwsError> {
     let params = function.to_wasm_params(&ctx.params)?;
+
+    let _ = FUNCTION_CALL_RESPONSE_TIME.start_timer();
 
     let mut compiler_config = wasmer_compiler_cranelift::Cranelift::default();
     compiler_config.push_middleware(Arc::new(wasmer_middlewares::Metering::new(
@@ -88,6 +91,8 @@ pub async fn call_function(
         TransactionError::Transaction(DbErr::Custom(_)) => AwsError::InsufficientCredits,
         _ => AwsError::UnknownServerError,
     })?;
+
+    FUNCTION_CALLS.inc();
 
     Ok(CallFunctionResponse {
         return_value: result[..function.get_ret_types()?.len()].to_vec(),

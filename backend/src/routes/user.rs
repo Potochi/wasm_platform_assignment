@@ -15,6 +15,7 @@ use crate::{
     constants::{INITIAL_WALLET_CREDITS, JWT_TOKEN_VALIDITY, MINIMUM_PASSWORD_LENGTH},
     entities,
     extractors::WalletExtract,
+    metrics::ACTIVE_USERS,
     utils::{password_secure_check, DbConn},
 };
 
@@ -88,6 +89,8 @@ pub async fn register_user(
     .await
     .map_err(|_| AwsError::DuplicateUsername)?;
 
+    ACTIVE_USERS.inc();
+
     Ok(StatusCode::OK)
 }
 
@@ -129,4 +132,28 @@ pub async fn login_user(
     Ok(axum::Json::from(JwtResponse {
         jwt: claims.to_jwt(&JWT_ENCODING_KEY)?,
     }))
+}
+
+pub async fn delete_account(
+    claims: AwsClaims,
+    Extension(DbConn(db)): Extension<DbConn>,
+) -> Result<(), AwsError> {
+    db.transaction::<_, _, DbErr>(|txn| {
+        Box::pin(async move {
+            let user = entities::user::ActiveModel {
+                id: ActiveValue::Set(claims.uid),
+                ..Default::default()
+            };
+
+            user.delete(txn).await?;
+
+            Ok(())
+        })
+    })
+    .await
+    .map_err(|_| AwsError::DuplicateUsername)?;
+
+    ACTIVE_USERS.dec();
+
+    Ok(())
 }

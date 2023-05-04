@@ -10,8 +10,11 @@ use axum::{
 
 use sea_orm::{ConnectOptions, Database};
 
-use aws_backend::utils::DbConn;
-use aws_backend::{cache::ModuleCache, routes::modules::delete_module};
+use aws_backend::{
+    cache::ModuleCache,
+    routes::{modules::delete_module, user::delete_account},
+};
+use aws_backend::{routes::metrics::get_metrics, utils::DbConn};
 use tower_http::cors;
 
 use aws_backend::routes::{
@@ -42,7 +45,8 @@ async fn main() -> anyhow::Result<()> {
                     "/auth",
                     Router::new()
                         .route("/register", post(register_user))
-                        .route("/login", post(login_user)),
+                        .route("/login", post(login_user))
+                        .route("/delete", delete(delete_account)),
                 )
                 .nest(
                     "/user",
@@ -67,7 +71,8 @@ async fn main() -> anyhow::Result<()> {
                 ),
         )
         .layer(Extension(db_conn))
-        .layer(cors::CorsLayer::very_permissive());
+        .layer(cors::CorsLayer::very_permissive())
+        .nest("/metrics", Router::new().route("/", get(get_metrics)));
 
     let addr =
         SocketAddr::from_str(&std::env::var("LISTEN_ADDR").expect("LISTEN_ADDR to be present"))
