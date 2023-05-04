@@ -29,9 +29,6 @@ ul.functionList {
 .deleteButton {
   background-color: rgb(125, 31, 31);
 }
-
-.moduleName {
-}
 </style>
 
 <script lang="ts">
