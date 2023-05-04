@@ -54,7 +54,7 @@ const handleRemove = async () => {
 
   console.log(result);
 
-  $userModules = [];
+  $userModules = undefined;
 };
 </script>
 

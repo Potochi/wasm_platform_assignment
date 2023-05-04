@@ -22,7 +22,7 @@ const handleUpload = async () => {
     }
   }
 
-  $userModules = [];
+  $userModules = undefined;
 };
 </script>
 
