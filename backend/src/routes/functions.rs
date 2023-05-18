@@ -48,7 +48,9 @@ pub async fn call_function(
 
     let params = params.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
 
-    let result = func.call(&mut store, &params).map_err(|_| {
+    let result = func.call(&mut store, &params).map_err(|e| {
+        tracing::error!("Func call {e:#?}");
+
         match get_remaining_points(&mut store, &instance) {
             MeteringPoints::Remaining(_) => AwsError::UnknownServerError,
             MeteringPoints::Exhausted => AwsError::InsufficientCredits,
@@ -68,6 +70,8 @@ pub async fn call_function(
 
     let used = wallet.credits - amt;
 
+    tracing::info!("used credits {used:#?}");
+
     db.transaction(|txn| {
         Box::pin(async move {
             let mut update_wallet_query = Query::update();
@@ -75,7 +79,8 @@ pub async fn call_function(
             update_wallet_query
                 .table(Wallet::Table)
                 .value(Wallet::Credits, Expr::col(Wallet::Credits).sub(used))
-                .and_where(Expr::col(Wallet::Credits).gte(used));
+                .and_where(Expr::col(Wallet::Credits).gte(used))
+                .and_where(Expr::col(Wallet::UserId).eq(wallet.user_id));
 
             let builder = txn.get_database_backend();
             let res = txn.execute(builder.build(&update_wallet_query)).await?;
@@ -87,9 +92,12 @@ pub async fn call_function(
         })
     })
     .await
-    .map_err(|e| match e {
-        TransactionError::Transaction(DbErr::Custom(_)) => AwsError::InsufficientCredits,
-        _ => AwsError::UnknownServerError,
+    .map_err(|e| {
+        tracing::error!("transacetion {e:#?}");
+        match e {
+            TransactionError::Transaction(DbErr::Custom(_)) => AwsError::InsufficientCredits,
+            _ => AwsError::UnknownServerError,
+        }
     })?;
 
     FUNCTION_CALLS.inc();

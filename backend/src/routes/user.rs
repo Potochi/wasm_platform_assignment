@@ -8,10 +8,7 @@ use sea_orm::{
 use serde::Deserialize;
 
 use crate::{
-    auth::{
-        jwt::{AwsClaims, JwtResponse},
-        keys::JWT_ENCODING_KEY,
-    },
+    auth::jwt::{AwsClaims, JwtResponse},
     constants::{INITIAL_WALLET_CREDITS, JWT_TOKEN_VALIDITY, MINIMUM_PASSWORD_LENGTH},
     entities,
     extractors::WalletExtract,
@@ -130,7 +127,7 @@ pub async fn login_user(
     };
 
     Ok(axum::Json::from(JwtResponse {
-        jwt: claims.to_jwt(&JWT_ENCODING_KEY)?,
+        jwt: claims.to_jwt().await?,
     }))
 }
 

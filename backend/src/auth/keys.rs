@@ -1,17 +1,13 @@
-use jsonwebtoken::{DecodingKey, EncodingKey};
+use jsonwebtoken::DecodingKey;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref JWT_ENCODING_KEY: EncodingKey = EncodingKey::from_base64_secret(
-        &std::env::var("JWT_BASE64_SECRET")
-            .unwrap_or("cGVuaXNiZW5pcw==".to_string())
-            
+    pub static ref JWT_DECODING_KEY: DecodingKey = DecodingKey::from_ec_pem(
+        std::fs::read_to_string(
+            std::env::var("JWT_PUBLIC_KEY_PATH").expect("env var to be present")
+        )
+        .expect("to be able to read public key file")
+        .as_bytes()
     )
-    .expect("secret to be valid");
-    pub static ref JWT_DECODING_KEY: DecodingKey = DecodingKey::from_base64_secret(
-        &std::env::var("JWT_BASE64_SECRET")
-            .unwrap_or("cGVuaXNiZW5pcw==".to_string())
-            
-    )
-    .expect("secret to be valid");
+    .expect("Public key to be valid");
 }

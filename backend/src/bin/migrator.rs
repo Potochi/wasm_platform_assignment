@@ -19,11 +19,10 @@ async fn main() -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("Failed to install tracing_subscriber"))?;
 
     tracing::info!("Starting migrations...");
-    let sleep_secs = u64::from_str_radix(
-        &std::env::var("RETRY_SLEEP_SECS").unwrap_or("5".to_owned()),
-        10,
-    )
-    .map_err(|_| anyhow::anyhow!("Invalid sleep duration"))?;
+    let sleep_secs = std::env::var("RETRY_SLEEP_SECS")
+        .unwrap_or("5".to_owned())
+        .parse()
+        .map_err(|_| anyhow::anyhow!("Invalid sleep duration"))?;
 
     while let Err(e) = attempt_migrations().await {
         tracing::info!("Could not run migrations because err: {e}, retrying...");

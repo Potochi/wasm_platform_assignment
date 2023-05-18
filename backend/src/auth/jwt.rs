@@ -5,7 +5,7 @@ use axum::{
     headers::{authorization::Bearer, Authorization},
     RequestPartsExt,
 };
-use jsonwebtoken::{EncodingKey, Validation};
+use jsonwebtoken::Validation;
 use serde::{Deserialize, Serialize};
 
 use super::keys::JWT_DECODING_KEY;
@@ -23,11 +23,28 @@ pub struct AwsClaims {
 }
 
 impl AwsClaims {
-    pub fn to_jwt(&self, encoding_key: &EncodingKey) -> Result<String, AwsError> {
-        let bearer = jsonwebtoken::encode(&jsonwebtoken::Header::default(), &self, encoding_key)
-            .map_err(|_| AwsError::UnknownServerError)?;
+    pub async fn to_jwt(&self) -> Result<String, AwsError> {
+        tracing::info!("CACARE REQUEST");
+        let client = reqwest::Client::new();
 
-        Ok(bearer)
+        let response = client
+            .post("http://auth:3000/api/v1/sign")
+            .json(self)
+            .send()
+            .await
+            .map_err(|e| {
+                tracing::error!("Resp {e:#?}");
+                AwsError::JwtSignatureFailure
+            })?;
+
+        tracing::info!("Signature response = {response:#?}");
+
+        let token = response.json::<String>().await.map_err(|e| {
+            tracing::error!("Body {e:#?}");
+            AwsError::JwtSignatureFailure
+        })?;
+
+        Ok(token)
     }
 }
 
@@ -52,7 +69,7 @@ where
         let token = jsonwebtoken::decode::<AwsClaims>(
             bearer.token(),
             &JWT_DECODING_KEY,
-            &Validation::default(),
+            &Validation::new(jsonwebtoken::Algorithm::ES256),
         )
         .map_err(|e| {
             tracing::debug!("Token verification failed with {err}", err = e);
@@ -62,4 +79,31 @@ where
 
         Ok(token.claims)
     }
+}
+
+#[test]
+fn test_jwt_keys() {
+    let claims = AwsClaims {
+        sub: "emi".to_string(),
+        exp: (SystemTime::now().duration_since(UNIX_EPOCH).unwrap() + JWT_TOKEN_VALIDITY).as_secs()
+            as usize,
+        uid: 0i32,
+    };
+
+    let token = jsonwebtoken::encode(
+        &jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES256),
+        &claims,
+        &JWT_ENCODING_KEY,
+    )
+    .unwrap();
+
+    println!("{token}");
+
+    let _: AwsClaims = jsonwebtoken::decode(
+        &token,
+        &JWT_DECODING_KEY,
+        &Validation::new(jsonwebtoken::Algorithm::ES256),
+    )
+    .unwrap()
+    .claims;
 }
