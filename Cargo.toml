@@ -1,3 +1,9 @@
 [workspace]
 
-members = ["backend", "common"]
+members = ["backend", "common", "auth"]
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = "fat"
+panic = "abort"
