@@ -107,6 +107,28 @@ services:
       - 443:443
       - 8080:8080
 
+  grafana:
+    image: grafana/grafana-oss
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.entrypoints=web,websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.rule=Host(`grafana.surface.home`)
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana_provisioning:/etc/grafana/provisioning:ro
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin1
+
+    networks:
+      prometheus_net:
+      gateway_net:
+
   auth:
     build:
       dockerfile: ./Auth.dockerfile
@@ -134,3 +156,4 @@ networks:
 volumes:
   database_data:
   cloudbeaver_data:
+  grafana_data:
