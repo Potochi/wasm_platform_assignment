@@ -20,6 +20,7 @@ pub enum AwsError {
     InsufficientCredits,
     PasswordTooShort,
     PasswordTooWeak,
+    JwtSignatureFailure,
 }
 
 impl IntoResponse for AwsError {
@@ -118,6 +119,12 @@ impl IntoResponse for AwsError {
                 StatusCode::BAD_REQUEST,
                 axum::Json::from(serde_json::json!({
                     "error": format!("expected type {e} but got type {p}")
+                })),
+            ),
+            AwsError::JwtSignatureFailure => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json::from(serde_json::json!({
+                    "error": format!("failed to sign token")
                 })),
             ),
         }
