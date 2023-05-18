@@ -20,8 +20,13 @@ COPY ./Cargo.lock /build/
 
 COPY ./common /build/common/
 COPY ./backend /build/backend/
+COPY ./auth /build/auth/
 
-RUN --mount=type=cache,target=/cache/sccache cargo build --release
+RUN --mount=type=cache,target=/cache/sccache \
+  cargo build --release --package aws_backend --bin aws_backend
+
+RUN --mount=type=cache,target=/cache/sccache \
+  cargo build --release --package aws_backend --bin aws_migrator
 
 WORKDIR /dist
 
@@ -31,6 +36,9 @@ RUN mv /build/target/release/aws_migrator .
 FROM debian:buster
 
 WORKDIR /app
+
+RUN apt update
+RUN apt install -y libssl1.1
 
 COPY --from=builder /dist/aws_backend .
 COPY --from=builder /dist/aws_migrator .
