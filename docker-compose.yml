@@ -24,6 +24,11 @@ services:
       DB_URL: ${DB_URL}
       LISTEN_ADDR: 0.0.0.0:3000
       RUST_LOG: info
+      JWT_PRIVATE_KEY_PATH: /keys/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+
+    volumes:
+      - ./secrets/jwt-public.pem:/keys/jwt-public.pem:ro
 
     labels:
       - traefik.enable=true
