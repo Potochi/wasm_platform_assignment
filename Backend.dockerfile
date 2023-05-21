@@ -4,7 +4,7 @@ ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 RUN cargo install sccache
 
-ENV SCCACHE_CACHE_SIZE="5G"
+ENV SCCACHE_CACHE_SIZE="10G"
 ENV SCCACHE_DIR=/cache/sccache
 ENV RUSTC_WRAPPER="/usr/local/cargo/bin/sccache"
 
