@@ -45,7 +45,7 @@ services:
       - ./secrets/jwt-public.pem:/keys/jwt-public.pem:ro
 
     labels:
-      - traefik.enable=true
+      - traefik.enable=false
       - traefik.http.routers.backend.entrypoints=web,websecure
       - traefik.http.routers.backend.tls=true
       - traefik.http.routers.backend.rule=Host(`backend.surface.home`)
@@ -168,7 +168,7 @@ services:
       replicas: 1
 
       labels:
-        - traefik.enable=true
+        - traefik.enable=false
         - traefik.http.routers.prometheus.entrypoints=web,websecure
         - traefik.http.routers.prometheus.tls=true
         - traefik.http.routers.prometheus.rule=Host(`prometheus.surface.home`)
