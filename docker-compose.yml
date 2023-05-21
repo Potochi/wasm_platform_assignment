@@ -7,8 +7,8 @@ services:
     image: mariadb:latest
 
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_ROOT_PASSWORD: secretmysqlpassword123
+      MARIADB_DATABASE: aws
 
     networks:
       database_net:
@@ -16,12 +16,26 @@ services:
     volumes:
       - database_data:/var/lib/mysql
 
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+
   backend:
     build:
       dockerfile: ./Backend.dockerfile
+      args:
+        DOCKER_BUILDKIT: 1
+
+    image: serverless-backend
 
     environment:
-      DB_URL: ${DB_URL}
+      DB_URL: mysql://root:secretmysqlpassword123@database:3306/aws
       LISTEN_ADDR: 0.0.0.0:3000
       RUST_LOG: info
       JWT_PRIVATE_KEY_PATH: /keys/jwt-private.pem
@@ -37,6 +51,22 @@ services:
       - traefik.http.routers.backend.rule=Host(`backend.surface.home`)
       - traefik.http.services.backend.loadbalancer.server.port=3000
 
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.backend.entrypoints=web,websecure
+        - traefik.http.routers.backend.tls=true
+        - traefik.http.routers.backend.rule=Host(`backend.surface.home`)
+        - traefik.http.services.backend.loadbalancer.server.port=3000
+
     networks:
       database_net:
       backend_net:
@@ -47,6 +77,7 @@ services:
   dashboard:
     build:
       dockerfile: ./Dashboard.dockerfile
+    image: serverless-dashboard
 
     labels:
       - traefik.enable=true
@@ -58,6 +89,23 @@ services:
     networks:
       gateway_net:
       backend_net:
+
+
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.dashboard.entrypoints=web,websecure
+        - traefik.http.routers.dashboard.tls=true
+        - traefik.http.routers.dashboard.rule=Host(`dashboard.surface.home`)
+        - traefik.http.services.dashboard.loadbalancer.server.port=80
 
   cloudbeaver:
     image: dbeaver/cloudbeaver
@@ -76,6 +124,23 @@ services:
       - traefik.http.routers.cloudbeaver.rule=Host(`cloudbeaver.surface.home`)
       - traefik.http.services.cloudbeaver.loadbalancer.server.port=8978
 
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.dashboard.entrypoints=web,websecure
+        - traefik.http.routers.dashboard.tls=true
+        - traefik.http.routers.dashboard.rule=Host(`dashboard.surface.home`)
+        - traefik.http.services.dashboard.loadbalancer.server.port=80
+
+
   prometheus:
     image: prom/prometheus:latest
 
@@ -92,6 +157,22 @@ services:
     networks:
       prometheus_net:
       gateway_net:
+
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.entrypoints=web,websecure
+        - traefik.http.routers.prometheus.tls=true
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.surface.home`)
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   gateway:
     image: traefik:latest
@@ -126,6 +207,23 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
 
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.grafana.entrypoints=web,websecure
+        - traefik.http.routers.grafana.tls=true
+        - traefik.http.routers.grafana.rule=Host(`grafana.surface.home`)
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin1
@@ -137,6 +235,10 @@ services:
   auth:
     build:
       dockerfile: ./Auth.dockerfile
+      args:
+        DOCKER_BUILDKIT: 1
+
+    image: serverless-auth
 
     networks:
       auth_net:
@@ -149,6 +251,28 @@ services:
     volumes:
       - ./secrets/jwt-private-pkcs8.pem:/keys/jwt-private.pem:ro
 
+  master_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - '/:/host:ro,rslave'
+
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role == manager"
+
+    networks:
+      prometheus_net:
 
 networks:
   backend_net:
