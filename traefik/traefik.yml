@@ -20,6 +20,7 @@ providers:
     exposedByDefault: false
     watch: true
     network: gateway_net
+    swarmMode: true
 
   file:
     filename: /etc/traefik/tls.yml
